@@ -1,103 +1,23 @@
-TODO list:
+# Remote Build Pipeline for C++ Applications
 
-# white the tar file on my drive, then do:
-docker load -i buildkit_image.tar
+## 🎯 The Goal: Decrease Build Times
+This project solves the problem of slow build procceses in CI environments. Instead of running multiple, sequential `docker build` commands that compile the same C++ code repeatedly, and installs the same libraries or packages, this infrastructure uses **Docker Buildx Bake** to offload the heavy lifting to a Dedicated remote server. 
 
-docker tag moby/buildkit:buildx-stable-1 artifactory.iaf/labs-docker-dev/buildkit:buildx-stable-1
+By sharing compilation stages, building targets concurrently, and utilizing aggressive caching, it completely eliminates double-building and saves precious CI execution time.
 
-docker push artifactory.iaf/labs-docker-dev/buildkit:buildx-stable-1
+## 📂 File Structure
 
-then in docker buildx create add:
---driver-opt image=artifactory.iaf/labs-docker-dev/buildkit:buildx-stable-1 \
+* **`docker-bake.hcl`**: The configuration file that defines multiple build targets (e.g., Slim for production, Full for dev) so they can be built concurrently.
+* **`Dockerfile`**: A multi-stage setup (Base -> Builder -> Slim -> Full) that compiles the C++ code once and extracts only the final lightweight binary.
+* **`build_remote.sh`**: The core automation script. It bootstrap the SSH connection, set up the remote BuildKit engine, and execute the bake command.
+* **`buildkitd.toml`**: Configures the remote BuildKit daemon, enforcing strict Garbage Collection (GC) so the remote server's disk doesn't fill up with cache.
+* **`Makefile`**: A clean wrapper to inject environment variables and trigger the pipeline easily (e.g., `make build`). Used for local build tests.
+* **`main.cpp`**: The sample C++ application source code being compiled.
+* **`.gitignore` & `.dockerignore`**: Ensures sensitive SSH keys, local artifacts, and heavy binaries are kept out of Git and the Docker build context.
 
+## 🏗️ Architecture Overview
 
-# white "docker-buildx" file from drive and upload to artifactory.
-# then add to the beggining build_remote script:
-echo "Setting up Docker Buildx plugin for this pod..."
-
-mkdir -p ~/.docker/cli-plugins
-
-wget -q http://artifactory.iaf/tools/docker-buildx -O ~/.docker/
-
-cli-plugins/docker-buildx
-
-chmod +x ~/.docker/cli-plugins/docker-buildx
-
-docker buildx version
-
-
-# on artifactory check if i can yum install:
-
-
-1. On the Jenkins build machine:
-    install the docker buildx plugin by:
-    yum install docker-buildx-plugin
-    then just check its alr by :
-    docker buildx version
-    * check if i have to white it.
-    might have to do "export DOCKER_BUILDKIT=1" before docker build command.
-
-2. Change the Dockerfile structure to match the one i made.
-
-3. Make the .hcl file (similar to the one i made)
-
-4. Modify the Jenkinsfile: add the required env vars,
-    1. instead of the exports - use "environment" tag
-        which is built in Jenkins and set them.
-    2. change DockerbuildPush command to docker buildx bake --push
-        do docker login in the bash script.
-    3. create a script to connent to the remote server - the one i made.       
-
-
-
-
-
-
-# remote server side:
-# all the steps required to set the server up
-
-1. get a working free server
-
-
-2. install docker on it and set it up:
- * install docker:
-    yum install docker
-
-* make docker start even if the server restarts:
-    sudo systemctl enable --now docker
-
-* give permissions by this command:
-    sudo usermod -aG docker $USER
-    after that command, exit and connect again.
-
-* clear temp files at 3AM everyday cronjob:    
-    0 3 * * * docker system prune -a --volumes -f --filter "until=24h"
-
-
-
-3. SSH setup. creates the SSH keys and set it to authorized keys:
-
-    sudo systemctl enable ssh\sshd
-
-    service ssh start
-
-    mkdir -p ~/.ssh
-
-    chmod 700 ~/.ssh
-
-    rm -f ~/.ssh/id_ed25519*
-
-    ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-
-    cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
-
-    chmod 600 ~/.ssh/authorized_keys
-
-    * then just uplaod to Vault the private ssh key: 
-    cat ~/.ssh/id_ed25519
-    and the host key: cat /etc/ssh/ssh_host_ed25519_key.pub
-
-thats it! the remote server is ready!
-
-if i wanna clean packages cache:
-docker buildx prune --force --filter type=exec.cachemount
+1. **The Client (CI Agent):** It prepares credentials and variables but does zero compilation.
+2. **The Secure Tunnel:** Establishes a zero-touch SSH connection to the build server, bypassing manual host verification prompts.
+3. **The Remote Builder:** A multi-core server running `moby/buildkit`. It receives the code, utilizes `RUN --mount=type=cache` for ultra-fast package downloads, and performs the heavy C++ compilation.
+4. **Direct Push:** Instead of sending the heavy final images back to the weak CI agent (which takes a lot of time), the remote builder pushes them directly to the target container registry in seconds.
