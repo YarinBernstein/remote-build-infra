@@ -1,0 +1,20 @@
+# Git
+.git
+.gitignore
+
+# C++ Build artifacts
+*.o
+*.out
+build/
+bin/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# IDE's
+.idea/
+.vscode/
+*.swp

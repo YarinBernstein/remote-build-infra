@@ -1,0 +1,32 @@
+# Security & SSH 
+*.pem
+*.key
+*.rsa
+id_rsa
+id_rsa.pub
+.ssh/
+
+# Docker Buildx Plugin & Binaries
+docker-buildx
+cli-plugins/
+
+# C++ Build Artifacts
+*.o
+*.out
+*.exe
+bin/
+build/
+
+# Python Cache & Envs
+__pycache__/
+*.py[cod]
+*~
+venv/
+env/
+.env
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

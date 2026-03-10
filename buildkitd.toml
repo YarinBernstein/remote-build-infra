@@ -1,0 +1,13 @@
+[worker.oci]
+  max-parallelism = 4
+
+  # cache
+  [[worker.oci.gcpolicy]]
+    keepBytes = 32212254720 # 30GB
+    keepDuration = 172800 
+    filters = ["type==regular"]
+
+  # cachemounts for Yum, Pip, Wget and CCACHE
+  [[worker.oci.gcpolicy]]
+    keepBytes = 26843545600 # 25GB
+    filters = ["type==exec.cachemount"]
