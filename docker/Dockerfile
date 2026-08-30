@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/var/cache/yum,sharing=locked \
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     pip3 install pandas numpy
 
-COPY . .
+COPY src/main.cpp .
 RUN g++ main.cpp -o my_app
 
 # Stage 3: slim runtime image - just the compiled binary

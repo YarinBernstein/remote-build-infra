@@ -15,8 +15,8 @@ export REMOTE_PORT="${REMOTE_PORT:-22}"
 
 export BUILDER_NAME="labs-builder"
 
-if [ ! -f "./buildkitd.toml" ]; then
-    echo "ERROR: buildkitd.toml not found in the current directory. Aborting."
+if [ ! -f "./docker/buildkitd.toml" ]; then
+    echo "ERROR: docker/buildkitd.toml not found. Run this script from the repo root. Aborting."
     exit 1
 fi
 
@@ -68,7 +68,7 @@ if ! docker buildx inspect ${BUILDER_NAME} > /dev/null 2>&1; then
     docker buildx create \
         --name ${BUILDER_NAME} \
         --driver docker-container \
-        --config ./buildkitd.toml \
+        --config ./docker/buildkitd.toml \
         --use \
         ssh://${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PORT}
 else
@@ -80,6 +80,6 @@ echo "Bootstrapping remote connection..."
 docker buildx inspect --bootstrap
 
 echo "Starting Buildx Bake with action: '${ACTION}'..."
-docker buildx bake --progress=plain ${ACTION}
+docker buildx bake -f docker/docker-bake.hcl --progress=plain ${ACTION}
 
 echo "Build completed successfully!"

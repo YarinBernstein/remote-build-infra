@@ -7,13 +7,13 @@ group "default" {
 }
 
 target "slim" {
-  dockerfile = "Dockerfile"
+  dockerfile = "docker/Dockerfile"
   target = "slim"
   tags = ["${REGISTRY}/${SERVICE}_slim"]
 }
 
 target "full" {
-  dockerfile = "Dockerfile"
+  dockerfile = "docker/Dockerfile"
   target = "full"
   tags = ["${REGISTRY}/${SERVICE}_full"]
 }

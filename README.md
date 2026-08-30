@@ -6,14 +6,23 @@ CI agents are usually weak and end up compiling the same C++ code and reinstalli
 
 ## File structure
 
-- `docker-bake.hcl` — defines the `slim` (production) and `full` (dev) build targets so they build concurrently.
-- `Dockerfile` — multi-stage build (base → builder → slim/full) that compiles once and extracts only what each target needs.
-- `build_remote.sh` — bootstraps the SSH connection to the build server, registers it as a Buildx builder, and runs the bake.
-- `buildkitd.toml` — configures the remote BuildKit daemon's garbage collection so its disk doesn't fill up with cache.
-- `setup_remote_server.sh` — run once on a fresh build server to install Docker, open SSH, schedule cache cleanup, and generate the CI SSH keypair.
-- `Makefile` — shortcuts: `make build-slim` / `make build-full` for local test builds, `make remote-build` / `make remote-push` for the remote pipeline.
-- `main.cpp` — sample C++ source being compiled.
-- `.gitignore` / `.dockerignore` — keep SSH keys, local artifacts, and build output out of Git and the Docker build context.
+```
+.
+├── Makefile              # shortcuts: build-slim/build-full (local), remote-build/remote-push
+├── README.md
+├── TODO.md
+├── docker/
+│   ├── Dockerfile        # multi-stage build (base → builder → slim/full)
+│   ├── docker-bake.hcl   # defines the slim (production) and full (dev) targets
+│   └── buildkitd.toml    # remote BuildKit daemon cache/garbage-collection config
+├── scripts/
+│   ├── build_remote.sh         # bootstraps the SSH connection, runs the bake
+│   └── setup_remote_server.sh  # one-time setup for a fresh build server
+└── src/
+    └── main.cpp           # sample C++ source being compiled
+```
+
+`.gitignore` / `.dockerignore` keep SSH keys, local artifacts, and build output out of Git and the Docker build context.
 
 ## Architecture
 
@@ -25,6 +34,6 @@ CI agents are usually weak and end up compiling the same C++ code and reinstalli
 ## Setting up a remote build server
 
 1. Provision a server with SSH access — an Oracle Cloud Always Free VM (Oracle Linux 9) works well and costs nothing.
-2. SSH in and run `bash setup_remote_server.sh`. It installs Docker, opens port 22, schedules daily cache cleanup, and generates a dedicated SSH keypair for CI.
+2. SSH in and run `bash scripts/setup_remote_server.sh`. It installs Docker, opens port 22, schedules daily cache cleanup, and generates a dedicated SSH keypair for CI.
 3. Store the printed private key as `REMOTE_SECRET_SSH_KEY` and the printed host public key as `REMOTE_HOST_KEY` in your CI secrets store — never commit them.
-4. Export `REMOTE_HOST` (and `REMOTE_USER` / `REMOTE_PORT` if not using the defaults `opc` / `22`), then run `build_remote.sh` or `make remote-build` / `make remote-push`.
+4. Export `REMOTE_HOST` (and `REMOTE_USER` / `REMOTE_PORT` if not using the defaults `opc` / `22`), then from the repo root run `make remote-build` / `make remote-push` (or `scripts/build_remote.sh` directly).

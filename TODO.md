@@ -17,7 +17,7 @@
 ## If the docker-buildx CLI plugin isn't available via yum
 
 1. Upload the `docker-buildx` binary to artifactory.
-2. Add to the top of `build_remote.sh`:
+2. Add to the top of `scripts/build_remote.sh`:
    ```
    mkdir -p ~/.docker/cli-plugins
    wget -q http://artifactory.iaf/tools/docker-buildx -O ~/.docker/cli-plugins/docker-buildx
@@ -32,10 +32,10 @@
 2. Update the Jenkinsfile:
    - Replace the `export` lines with Jenkins' built-in `environment` block.
    - Change the docker build/push step to `docker buildx bake --push` (add `docker login` before it).
-   - Call `build_remote.sh` to connect to the remote build server.
+   - Call `scripts/build_remote.sh` to connect to the remote build server.
 
 ## Remote server setup
 
-Done — `setup_remote_server.sh` automates Docker install, firewall, SSH keypair
+Done — `scripts/setup_remote_server.sh` automates Docker install, firewall, SSH keypair
 generation, and the cache-cleanup cronjob. Provision a server (Oracle Cloud
 Always Free works well) and run that script instead of doing this by hand.
