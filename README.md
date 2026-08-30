@@ -1,31 +1,30 @@
 # Remote Build Pipeline for C++ Applications
 
-## 🎯 The Goal: Decrease Build Times
-This project solves the problem of slow build procceses in CI environments. Instead of running multiple, sequential `docker build` commands that compile the same C++ code repeatedly, and installs the same libraries or packages, this infrastructure uses **Docker Buildx Bake** to offload the heavy lifting to a Dedicated remote server. 
+## Goal
 
-By sharing compilation stages, building targets concurrently, and utilizing aggressive caching, it completely eliminates double-building and saves precious CI execution time.
+CI agents are usually weak and end up compiling the same C++ code and reinstalling the same packages on every run. This project uses **Docker Buildx Bake** to offload that work to a dedicated remote server instead — shared compilation stages, concurrent targets, and aggressive caching eliminate double-building and cut CI time.
 
-## 📂 File Structure
+## File structure
 
-* **`docker-bake.hcl`**: The configuration file that defines multiple build targets (e.g., Slim for production, Full for dev) so they can be built concurrently.
-* **`Dockerfile`**: A multi-stage setup (Base -> Builder -> Slim -> Full) that compiles the C++ code once and extracts only the final lightweight binary.
-* **`build_remote.sh`**: The core automation script. It bootstrap the SSH connection, set up the remote BuildKit engine, and execute the bake command.
-* **`buildkitd.toml`**: Configures the remote BuildKit daemon, enforcing strict Garbage Collection (GC) so the remote server's disk doesn't fill up with cache.
-* **`Makefile`**: A clean wrapper to inject environment variables and trigger the pipeline easily. `make build-slim` / `make build-full` run local test builds; `make remote-build` / `make remote-push` run `build_remote.sh` (the latter also pushes to the registry). Requires `REMOTE_SECRET_SSH_KEY` and `REMOTE_HOST` to be set in the environment.
-* **`main.cpp`**: The sample C++ application source code being compiled.
-* **`setup_remote_server.sh`**: Run once on a fresh build server (an Oracle Cloud Always Free VM works well) to install Docker, open SSH, schedule cache cleanup, and generate the CI SSH keypair.
-* **`.gitignore` & `.dockerignore`**: Ensures sensitive SSH keys, local artifacts, and heavy binaries are kept out of Git and the Docker build context.
+- `docker-bake.hcl` — defines the `slim` (production) and `full` (dev) build targets so they build concurrently.
+- `Dockerfile` — multi-stage build (base → builder → slim/full) that compiles once and extracts only what each target needs.
+- `build_remote.sh` — bootstraps the SSH connection to the build server, registers it as a Buildx builder, and runs the bake.
+- `buildkitd.toml` — configures the remote BuildKit daemon's garbage collection so its disk doesn't fill up with cache.
+- `setup_remote_server.sh` — run once on a fresh build server to install Docker, open SSH, schedule cache cleanup, and generate the CI SSH keypair.
+- `Makefile` — shortcuts: `make build-slim` / `make build-full` for local test builds, `make remote-build` / `make remote-push` for the remote pipeline.
+- `main.cpp` — sample C++ source being compiled.
+- `.gitignore` / `.dockerignore` — keep SSH keys, local artifacts, and build output out of Git and the Docker build context.
 
-## 🏗️ Architecture Overview
+## Architecture
 
-1. **The Client (CI Agent):** It prepares credentials and variables but does zero compilation.
-2. **The Secure Connection:** Establishes a zero-touch SSH connection directly to the build server (IP/hostname from `REMOTE_HOST`), bypassing manual host verification prompts.
-3. **The Remote Builder:** A multi-core server running `moby/buildkit`. It receives the code, utilizes `RUN --mount=type=cache` for ultra-fast package downloads, and performs the heavy C++ compilation.
-4. **Direct Push:** Instead of sending the heavy final images back to the weak CI agent (which takes a lot of time), the remote builder pushes them directly to the target container registry in seconds.
+1. **CI agent** — prepares credentials and variables, does zero compilation itself.
+2. **SSH connection** — connects directly to the build server (`REMOTE_HOST`), with the host key pre-pinned so there's no interactive prompt.
+3. **Remote builder** — a `moby/buildkit` server that receives the code, uses `RUN --mount=type=cache` for fast package installs, and does the actual compile.
+4. **Direct push** — the remote builder pushes finished images straight to the registry, instead of sending them back through the weak CI agent.
 
-## 🖥️ Setting up a remote build server
+## Setting up a remote build server
 
-1. Provision a server with SSH access (e.g. an Oracle Cloud Always Free `VM.Standard.A1.Flex` instance running Oracle Linux 9 — free forever, no tunnel service needed since it gets a real public IP).
-2. SSH in and run `bash setup_remote_server.sh` to install Docker, open port 22, schedule daily cache cleanup, and generate a dedicated SSH keypair for CI.
-3. Store the printed private key as `REMOTE_SECRET_SSH_KEY` and the printed host public key as `REMOTE_HOST_KEY` in your CI secrets store (Vault) — never commit them.
-4. Export `REMOTE_HOST` (and `REMOTE_USER`/`REMOTE_PORT` if not using the defaults `opc`/`22`) before running `build_remote.sh` or the `make remote-*` targets.
+1. Provision a server with SSH access — an Oracle Cloud Always Free VM (Oracle Linux 9) works well and costs nothing.
+2. SSH in and run `bash setup_remote_server.sh`. It installs Docker, opens port 22, schedules daily cache cleanup, and generates a dedicated SSH keypair for CI.
+3. Store the printed private key as `REMOTE_SECRET_SSH_KEY` and the printed host public key as `REMOTE_HOST_KEY` in your CI secrets store — never commit them.
+4. Export `REMOTE_HOST` (and `REMOTE_USER` / `REMOTE_PORT` if not using the defaults `opc` / `22`), then run `build_remote.sh` or `make remote-build` / `make remote-push`.

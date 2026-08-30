@@ -4,7 +4,7 @@
   # cache
   [[worker.oci.gcpolicy]]
     keepBytes = 32212254720 # 30GB
-    keepDuration = 172800 
+    keepDuration = 172800
     filters = ["type==regular"]
 
   # cachemounts for Yum, Pip, Wget and CCACHE
