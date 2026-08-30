@@ -11,7 +11,7 @@ By sharing compilation stages, building targets concurrently, and utilizing aggr
 * **`Dockerfile`**: A multi-stage setup (Base -> Builder -> Slim -> Full) that compiles the C++ code once and extracts only the final lightweight binary.
 * **`build_remote.sh`**: The core automation script. It bootstrap the SSH connection, set up the remote BuildKit engine, and execute the bake command.
 * **`buildkitd.toml`**: Configures the remote BuildKit daemon, enforcing strict Garbage Collection (GC) so the remote server's disk doesn't fill up with cache.
-* **`Makefile`**: A clean wrapper to inject environment variables and trigger the pipeline easily (e.g., `make build`). Used for local build tests.
+* **`Makefile`**: A clean wrapper to inject environment variables and trigger the pipeline easily. `make build-slim` / `make build-full` run local test builds; `make remote-build` / `make remote-push` run `build_remote.sh` (the latter also pushes to the registry). Requires `REMOTE_SECRET_SSH_KEY` to be set in the environment.
 * **`main.cpp`**: The sample C++ application source code being compiled.
 * **`.gitignore` & `.dockerignore`**: Ensures sensitive SSH keys, local artifacts, and heavy binaries are kept out of Git and the Docker build context.
 

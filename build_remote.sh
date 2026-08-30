@@ -37,17 +37,16 @@ trap cleanup EXIT
 # SSH setup
 echo "Setting up SSH authentication..."
 
+# REMOTE_SECRET_SSH_KEY must be provided by the environment (e.g. injected
+# from Vault/CI secrets store). It is never hardcoded here.
+if [ -z "${REMOTE_SECRET_SSH_KEY:-}" ]; then
+    echo "ERROR: REMOTE_SECRET_SSH_KEY is not set. Export it from your secrets store before running this script."
+    exit 1
+fi
+
 # Create the .ssh directory
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
-
-export REMOTE_SECRET_SSH_KEY="-----BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACA8nNJ00OdvGZHueYuZlnTNo8rFEzRIV0laWZS/e8S+3AAAAJCJM6CSiTOg
-kgAAAAtzc2gtZWQyNTUxOQAAACA8nNJ00OdvGZHueYuZlnTNo8rFEzRIV0laWZS/e8S+3A
-AAAEBgtcd3kqdrfFndiBsgzVWJft7+w2/+RsDvYbfBC5R+3Tyc0nTQ528Zke55i5mWdM2j
-ysUTNEhXSVpZlL97xL7cAAAAC3Jvb3RAdWJ1bnR1AQI=
------END OPENSSH PRIVATE KEY-----"
 
 echo "$REMOTE_SECRET_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
 chmod 600 ~/.ssh/id_ed25519
