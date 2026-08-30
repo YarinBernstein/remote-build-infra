@@ -55,6 +55,10 @@ docker buildx version
 
 # remote server side:
 # all the steps required to set the server up
+#
+# NOTE: steps 2-3 below are now automated by setup_remote_server.sh -
+# provision an Oracle Cloud Always Free VM (Oracle Linux 9) and run that
+# script on it instead of doing this by hand.
 
 1. get a working free server
 

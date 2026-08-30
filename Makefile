@@ -11,8 +11,9 @@ build-full:
 clean-cache:
 	REGISTRY=$(REGISTRY) SERVICE=$(SERVICE) docker buildx prune --builder default --force --filter type=exec.cachemount
 
-# Remote build pipeline (build_remote.sh). Requires REMOTE_SECRET_SSH_KEY
-# to be set in the environment (from Vault/CI secrets).
+# Remote build pipeline (build_remote.sh). Requires REMOTE_HOST,
+# REMOTE_SECRET_SSH_KEY and REMOTE_HOST_KEY to be set in the environment
+# (see setup_remote_server.sh).
 remote-build:
 	./build_remote.sh
 
