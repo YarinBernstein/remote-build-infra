@@ -7,16 +7,22 @@
 
 set -euo pipefail
 
-echo "Ensuring swap space exists (small Always Free shapes only have 1GB RAM,
-which is not enough for dnf's dependency resolver during package installs)..."
-if ! sudo swapon --show | grep -q .; then
-    sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    grep -q "/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab > /dev/null
+echo "Ensuring at least 4GB of swap exists (the smallest Always Free shape
+has under 1GB of real RAM, which starves dnf's dependency resolver during
+package installs - some images already ship a small swapfile, so top it
+up rather than skipping)..."
+TARGET_SWAP_MB=4096
+CURRENT_SWAP_MB=$(free -m | awk '/^Swap:/ {print $2}')
+if [ "$CURRENT_SWAP_MB" -lt "$TARGET_SWAP_MB" ]; then
+    ADD_MB=$((TARGET_SWAP_MB - CURRENT_SWAP_MB))
+    echo "Current swap is ${CURRENT_SWAP_MB}MB, adding ${ADD_MB}MB more..."
+    sudo fallocate -l ${ADD_MB}M /swapfile-extra || sudo dd if=/dev/zero of=/swapfile-extra bs=1M count=${ADD_MB}
+    sudo chmod 600 /swapfile-extra
+    sudo mkswap /swapfile-extra
+    sudo swapon /swapfile-extra
+    grep -q "/swapfile-extra" /etc/fstab || echo "/swapfile-extra none swap sw 0 0" | sudo tee -a /etc/fstab > /dev/null
 else
-    echo "Swap already present, skipping."
+    echo "Swap already sufficient (${CURRENT_SWAP_MB}MB), skipping."
 fi
 
 echo "Installing and enabling Docker..."
