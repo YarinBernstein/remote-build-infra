@@ -10,7 +10,7 @@ export SERVICE="simulation"
 # Remote build server connection - override via env vars. Defaults assume a
 # direct connection to an Oracle Linux VM on port 22 (see setup_remote_server.sh).
 export REMOTE_USER="${REMOTE_USER:-opc}"
-export REMOTE_HOST="${REMOTE_HOST:?ERROR: REMOTE_HOST is not set. Export the build server's IP/hostname.}"
+export REMOTE_HOST="${REMOTE_HOST:?ERROR: REMOTE_HOST is not set. Export the build server IP/hostname.}"
 export REMOTE_PORT="${REMOTE_PORT:-22}"
 
 export BUILDER_NAME="labs-builder"
