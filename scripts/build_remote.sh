@@ -46,8 +46,14 @@ chmod 700 ~/.ssh
 echo "$REMOTE_SECRET_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
 chmod 600 ~/.ssh/id_ed25519
 
-# Pin the host key so ssh never prompts to confirm it
-echo "[${REMOTE_HOST}]:${REMOTE_PORT} ${REMOTE_HOST_KEY}" > ~/.ssh/known_hosts
+# Pin the host key so ssh never prompts to confirm it. OpenSSH only uses
+# the [host]:port form in known_hosts for non-default ports - on port 22
+# it looks up the plain host, so the entry format has to match.
+if [ "${REMOTE_PORT}" = "22" ]; then
+    echo "${REMOTE_HOST} ${REMOTE_HOST_KEY}" > ~/.ssh/known_hosts
+else
+    echo "[${REMOTE_HOST}]:${REMOTE_PORT} ${REMOTE_HOST_KEY}" > ~/.ssh/known_hosts
+fi
 chmod 644 ~/.ssh/known_hosts
 
 cat <<EOF > ~/.ssh/config
