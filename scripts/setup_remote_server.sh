@@ -26,7 +26,21 @@ else
 fi
 
 echo "Installing and enabling Docker..."
-sudo dnf install -y docker
+# Oracle Linux 9's own repos have no package named "docker" - dnf would
+# otherwise scan every enabled repo (including the large UEK kernel repo)
+# looking for a match that does not exist. Add Docker's official CE repo
+# instead (the CentOS 9 build works fine on Oracle/RHEL-family systems).
+if ! command -v docker > /dev/null 2>&1; then
+    sudo tee /etc/yum.repos.d/docker-ce.repo > /dev/null <<'EOF'
+[docker-ce-stable]
+name=Docker CE Stable - $basearch
+baseurl=https://download.docker.com/linux/centos/9/$basearch/stable
+enabled=1
+gpgcheck=1
+gpgkey=https://download.docker.com/linux/centos/gpg
+EOF
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io
+fi
 sudo systemctl enable --now docker
 sudo usermod -aG docker "$USER"
 
