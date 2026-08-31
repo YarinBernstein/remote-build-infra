@@ -67,7 +67,7 @@ echo "Setting up remote builder on ${REMOTE_HOST}:${REMOTE_PORT}..."
 
 # Docker Desktop / WSL workaround: buildx expects this path to exist on the
 # remote host when the client runs under WSL2, even though it's unused here.
-ssh -p ${REMOTE_PORT} ${REMOTE_USER}@${REMOTE_HOST} "mkdir -p /usr/lib/wsl"
+ssh -p ${REMOTE_PORT} ${REMOTE_USER}@${REMOTE_HOST} "sudo mkdir -p /usr/lib/wsl"
 
 if ! docker buildx inspect ${BUILDER_NAME} > /dev/null 2>&1; then
     echo "Creating builder '${BUILDER_NAME}'..."
